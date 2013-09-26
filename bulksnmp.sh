@@ -92,5 +92,5 @@ do
             address_List="$address_List $addrLine"
         fi
     done
-    echo "$ip;$sysName;$sysLocation;$sysDescr;$sysContact;$address_List"
+    echo "\"$ip\";\"$sysName\";\"$sysLocation\";\"$sysDescr\";\"$sysContact\";\"$address_List\""
 done
