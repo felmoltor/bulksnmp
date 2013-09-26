@@ -30,10 +30,28 @@ cat << EOF
         * TODO: All interfaces addresses
 
     Felipe Molina (@felmoltor)
+
 EOF
 }
 
+###############
+# CONFIG VARS #
+###############
+DEFAULT_COMMUNITY="public"
+DEFAULT_SNMP_VER=1
+
+########
+# MAIN #
+########
+
 printBanner
+
+
+# 
+# root@SeOS:~/ffmt/Tools/bulksnmp# snmpwalk -c private -v1  10.229.28.125 ipAdEntAddr
+# IP-MIB::ipAdEntAddr.10.40.85.70 = IpAddress: 10.40.85.70
+# IP-MIB::ipAdEntAddr.127.0.0.1 = IpAddress: 127.0.0.1
+#
 
 # First argument for the IP list
 if [[ -f $1 ]]
@@ -48,11 +66,11 @@ if [[ $2 != "" ]]
 then
     COMMUNITY=$2
 else
-    COMMUNITY="public"
+    COMMUNITY=$DEFAULT_COMMUNITY
 fi
 
 
-echo "IP;sysName;sysLocation;sysDescr;sysContact"
+echo "IP;sysName;sysLocation;sysDescr;sysContact;Address List"
 for ip in `cat $IP_LIST`
 do
     # system=$(snmpwalk -c public -v1 $ip system)
@@ -64,8 +82,15 @@ do
         continue
     fi
     sysName=$(echo $sysName | cut -f2 -d= | cut -f2 -d:)
-    sysLocation=$(snmpwalk -c $COMMUNITY -v1 $ip sysLocation.0 | cut -f2 -d= | cut -f2 -d:)
-    sysDescr=$(snmpwalk -c $COMMUNITY -v1 $ip sysDescr.0 | cut -f2 -d= | sed 's/.*STRING: //gi' ) #  cut -f2 -d:)
-    sysContact=$(snmpwalk -c $COMMUNITY -v1 $ip sysContact.0 | cut -f2 -d= | cut -f2 -d:)
-    echo "$ip;$sysName;$sysLocation;$sysDescr;$sysContact"
+    sysLocation=$(snmpwalk -c $COMMUNITY -v$DEFAULT_SNMP_VER $ip sysLocation.0 | cut -f2 -d= | cut -f2 -d:)
+    sysDescr=$(snmpwalk -c $COMMUNITY -v$DEFAULT_SNMP_VER $ip sysDescr.0 | cut -f2 -d= | sed 's/.*STRING: //gi' ) #  cut -f2 -d:)
+    sysContact=$(snmpwalk -c $COMMUNITY -v$DEFAULT_SNMP_VER $ip sysContact.0 | cut -f2 -d= | cut -f2 -d:)
+    ipAddrs=$(snmpwalk -c $COMMUNITY -v$DEFAULT_SNMP_VER $ip ipAdEntAddr)
+    address_List=""
+    for addrLine in $ipAddrs; do
+        if [[ $addrLine =~ ^[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}$ ]]; then
+            address_List="$address_List $addrLine"
+        fi
+    done
+    echo "$ip;$sysName;$sysLocation;$sysDescr;$sysContact;$address_List"
 done
